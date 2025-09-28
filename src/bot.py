@@ -7,7 +7,9 @@ from src.config import DISCORD_TOKEN, GUILD_ID, REDIS_URL, LOG_LEVEL
 from src.db import init_db
 from src.redis_client import init_redis
 
-logging.basicConfig(level=getattr(logging, LOG_LEVEL))
+# Conversion de la chaîne LOG_LEVEL en niveau numérique
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
