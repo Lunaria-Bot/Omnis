@@ -7,7 +7,7 @@ from src.config import DISCORD_TOKEN, GUILD_ID, REDIS_URL, LOG_LEVEL
 from src.db import init_db
 from src.redis_client import init_redis
 
-# Conversion de la chaîne LOG_LEVEL en niveau numérique
+# Convert LOG_LEVEL string into numeric level
 logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
 
 intents = discord.Intents.default()
@@ -22,16 +22,15 @@ class OmnisBot(commands.Bot):
         await self.load_extension("src.cogs.moderation")
         await self.load_extension("src.cogs.tickets")
         await self.load_extension("src.cogs.logs")
-        await self.load_extension("src.cogs.tasks")
-        # Utilise directement self.tree (déjà présent)
+        await self.load_extension("src.cogs.tasks")  # background tasks cog
         await self.tree.sync(guild=discord.Object(id=GUILD_ID))
-        logging.info("Slash commands synced sur la guilde %s", GUILD_ID)
+        logging.info("Slash commands synced for guild %s", GUILD_ID)
 
 bot = OmnisBot()
 
 @bot.event
 async def on_ready():
-    logging.info("Connecté en tant que %s", bot.user)
+    logging.info("Connected as %s", bot.user)
 
 async def main():
     await init_db()
