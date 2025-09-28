@@ -22,6 +22,7 @@ class OmnisBot(commands.Bot):
         await self.load_extension("src.cogs.moderation")
         await self.load_extension("src.cogs.tickets")
         await self.load_extension("src.cogs.logs")
+        await self.load_extension("src.cogs.tasks")
         # Utilise directement self.tree (déjà présent)
         await self.tree.sync(guild=discord.Object(id=GUILD_ID))
         logging.info("Slash commands synced sur la guilde %s", GUILD_ID)
