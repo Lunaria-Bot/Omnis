@@ -17,17 +17,17 @@ class Logs(commands.Cog):
             return self.bot.get_channel(row["log_channel_id"])
         return None
 
-    @app_commands.command(name="set_log_channel", description="Définir le salon de logs")
+    @app_commands.command(name="set_log_channel", description="Set the log channel")
     async def set_log_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         if not interaction.user.guild_permissions.manage_guild:
-            return await interaction.response.send_message("Permission insuffisante.", ephemeral=True)
+            return await interaction.response.send_message("You don't have permission.", ephemeral=True)
         async with pool().acquire() as conn:
             await conn.execute(
                 "INSERT INTO guild_config (guild_id, log_channel_id) VALUES ($1,$2) "
                 "ON CONFLICT (guild_id) DO UPDATE SET log_channel_id=EXCLUDED.log_channel_id",
                 interaction.guild_id, channel.id
             )
-        await interaction.response.send_message(f"Salon de logs: {channel.mention}", ephemeral=True)
+        await interaction.response.send_message(f"Log channel set to: {channel.mention}", ephemeral=True)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
@@ -46,10 +46,10 @@ class Logs(commands.Cog):
         await rds().lpush(f"logs:last:{message.guild.id}", json.dumps(payload))
         chan = await self._get_log_channel(message.guild.id)
         if chan:
-            embed = discord.Embed(title="Message supprimé", color=discord.Color.red())
-            embed.add_field(name="Auteur", value=f"<@{message.author.id}>")
-            embed.add_field(name="Salon", value=f"<#{message.channel.id}>")
-            embed.add_field(name="Contenu", value=message.content or "(embed/attachments)", inline=False)
+            embed = discord.Embed(title="Message deleted", color=discord.Color.red())
+            embed.add_field(name="Author", value=f"<@{message.author.id}>")
+            embed.add_field(name="Channel", value=f"<#{message.channel.id}>")
+            embed.add_field(name="Content", value=message.content or "(embed/attachments)", inline=False)
             await chan.send(embed=embed)
 
     @commands.Cog.listener()
@@ -62,7 +62,7 @@ class Logs(commands.Cog):
             )
         chan = await self._get_log_channel(member.guild.id)
         if chan:
-            await chan.send(f"Arrivée: {member.mention}")
+            await chan.send(f"Member joined: {member.mention}")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -74,7 +74,7 @@ class Logs(commands.Cog):
             )
         chan = await self._get_log_channel(member.guild.id)
         if chan:
-            await chan.send(f"Départ: {member.mention}")
+            await chan.send(f"Member left: {member.mention}")
 
 async def setup(bot: commands.Bot):
     cog = Logs(bot)
