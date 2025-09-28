@@ -4,6 +4,7 @@ import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
+from src.config import GUILD_ID  # bind slash command to your guild
 
 log = logging.getLogger("cog-tasks")
 
@@ -21,6 +22,7 @@ class Tasks(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        # Start background tasks once when the bot is ready
         if not self._status_task:
             self._status_task = asyncio.create_task(self.cycle_status())
         if not self._heartbeat_task:
@@ -45,6 +47,7 @@ class Tasks(commands.Cog):
 
     @app_commands.command(name="status", description="Manually set the bot's status")
     @app_commands.describe(type="Type of activity", text="Status text")
+    @app_commands.guilds(GUILD_ID)  # bind this command to your guild to avoid global registration timing issues
     async def status(self, interaction: discord.Interaction, type: str, text: str):
         """Slash command to manually set a custom status."""
         mapping = {
@@ -64,6 +67,5 @@ class Tasks(commands.Cog):
         await interaction.response.send_message(f"✅ Status set to {type} {text}", ephemeral=True)
 
 async def setup(bot: commands.Bot):
-    cog = Tasks(bot)
-    await bot.add_cog(cog)
-    bot.tree.add_command(cog.status, guild=discord.Object(id=bot.guilds[0].id))  # sync in guild
+    # Just add the cog; command registration will be handled by the bot's tree sync
+    await bot.add_cog(Tasks(bot))
