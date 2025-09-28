@@ -3,9 +3,9 @@ import asyncio
 import discord
 from discord.ext import commands
 from discord import app_commands
-from config import DISCORD_TOKEN, GUILD_ID, REDIS_URL, LOG_LEVEL
-from db import init_db
-from redis_client import init_redis
+from src.config import DISCORD_TOKEN, GUILD_ID, REDIS_URL, LOG_LEVEL
+from src.db import init_db
+from src.redis_client import init_redis
 
 logging.basicConfig(level=getattr(logging, LOG_LEVEL))
 intents = discord.Intents.default()
@@ -18,9 +18,9 @@ class OmnisBot(commands.Bot):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        await self.load_extension("cogs.moderation")
-        await self.load_extension("cogs.tickets")
-        await self.load_extension("cogs.logs")
+        await self.load_extension("src.cogs.moderation")
+        await self.load_extension("src.cogs.tickets")
+        await self.load_extension("src.cogs.logs")
         await self.tree.sync(guild=discord.Object(id=GUILD_ID))
         logging.info("Slash commands synced sur la guilde %s", GUILD_ID)
 
