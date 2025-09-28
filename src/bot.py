@@ -3,7 +3,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from discord import app_commands
-from config import DISCORD_TOKEN, GUILD_ID, PG_DSN, REDIS_URL, LOG_LEVEL
+from config import DISCORD_TOKEN, GUILD_ID, REDIS_URL, LOG_LEVEL
 from db import init_db
 from redis_client import init_redis
 
@@ -21,7 +21,6 @@ class OmnisBot(commands.Bot):
         await self.load_extension("cogs.moderation")
         await self.load_extension("cogs.tickets")
         await self.load_extension("cogs.logs")
-        # Sync guild-only pour éviter le délai global
         await self.tree.sync(guild=discord.Object(id=GUILD_ID))
         logging.info("Slash commands synced sur la guilde %s", GUILD_ID)
 
@@ -32,7 +31,7 @@ async def on_ready():
     logging.info("Connecté en tant que %s", bot.user)
 
 async def main():
-    await init_db(PG_DSN)
+    await init_db()
     await init_redis(REDIS_URL)
     await bot.start(DISCORD_TOKEN)
 
