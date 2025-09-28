@@ -1,12 +1,12 @@
 import asyncpg
+from config import DATABASE_URL
 
 _pool = None
 
-async def init_db(dsn: str):
+async def init_db():
     global _pool
-    _pool = await asyncpg.create_pool(dsn, min_size=1, max_size=5)
+    _pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
     async with _pool.acquire() as conn:
-        # Exécuter le schéma au démarrage
         with open("schema.sql", "r", encoding="utf-8") as f:
             await conn.execute(f.read())
 
