@@ -17,12 +17,12 @@ intents.members = True
 class OmnisBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="!", intents=intents)
-        self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
         await self.load_extension("src.cogs.moderation")
         await self.load_extension("src.cogs.tickets")
         await self.load_extension("src.cogs.logs")
+        # Utilise directement self.tree (déjà présent)
         await self.tree.sync(guild=discord.Object(id=GUILD_ID))
         logging.info("Slash commands synced sur la guilde %s", GUILD_ID)
 
