@@ -25,7 +25,7 @@ class TicketsView(discord.ui.View):
         async with pool().acquire() as conn:
             cfg = await conn.fetchrow("SELECT ticket_category_id, staff_role_id FROM guild_config WHERE guild_id=$1", guild_id)
         if not cfg or not cfg["ticket_category_id"]:
-            return await interaction.response.send_message("Ticket category not configured.", ephemeral=True)
+            return await interaction.response.send_message("Ticket category is not configured.", ephemeral=True)
 
         category = interaction.guild.get_channel(cfg["ticket_category_id"])
         if not isinstance(category, discord.CategoryChannel):
@@ -84,4 +84,44 @@ class Tickets(commands.Cog):
     @app_commands.command(name="set_staff_role", description="Set the staff role for tickets")
     async def set_staff_role(self, interaction: discord.Interaction, role: discord.Role):
         if not interaction.user.guild_permissions.manage_guild:
-            return await interaction.response.send_message
+            return await interaction.response.send_message("You don't have permission.", ephemeral=True)
+        async with pool().acquire() as conn:
+            await conn.execute(
+                "INSERT INTO guild_config (guild_id, staff_role_id) VALUES ($1,$2) "
+                "ON CONFLICT (guild_id) DO UPDATE SET staff_role_id=EXCLUDED.staff_role_id",
+                interaction.guild_id, role.id
+            )
+        await interaction.response.send_message(f"Staff role set to: {role.name}", ephemeral=True)
+
+    @app_commands.command(name="close_ticket", description="Close the current ticket")
+    async def close_ticket(self, interaction: discord.Interaction):
+        async with pool().acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT id, user_id FROM tickets WHERE guild_id=$1 AND channel_id=$2 AND status='open'",
+                interaction.guild_id, interaction.channel_id
+            )
+        if not row:
+            return await interaction.response.send_message("This channel is not an open ticket.", ephemeral=True)
+        if interaction.user.id != row["user_id"] and not interaction.user.guild_permissions.manage_channels:
+            return await interaction.response.send_message("You don't have permission.", ephemeral=True)
+
+        async with pool().acquire() as conn:
+            await conn.execute("UPDATE tickets SET status='closed', closed_at=NOW() WHERE id=$1", row["id"])
+        await rds().delete(f"ticket:user:{interaction.guild_id}:{row['user_id']}")
+
+        await interaction.response.send_message("Ticket closed. This channel will be deleted in 10 seconds.", ephemeral=True)
+        await interaction.channel.send("Archiving...")
+        await asyncio.sleep(10)
+        try:
+            await interaction.channel.delete(reason="Ticket closed")
+        except discord.Forbidden:
+            pass
+
+async def setup(bot: commands.Bot):
+    cog = Tickets(bot)
+    await bot.add_cog(cog)
+    bot.add_view(cog.view)  # Persistent view across restarts
+    bot.tree.add_command(cog.setup_tickets, guild=discord.Object(id=GUILD_ID))
+    bot.tree.add_command(cog.set_ticket_category, guild=discord.Object(id=GUILD_ID))
+    bot.tree.add_command(cog.set_staff_role, guild=discord.Object(id=GUILD_ID))
+    bot.tree.add_command(cog.close_ticket, guild=discord.Object(id=GUILD_ID))
