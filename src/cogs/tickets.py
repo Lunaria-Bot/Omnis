@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from db import pool
-from redis_client import rds
-from config import GUILD_ID
+from src.db import pool
+from src.redis_client import rds
+from src.config import GUILD_ID
 
 class TicketsView(discord.ui.View):
     def __init__(self, timeout=None):
