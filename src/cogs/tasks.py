@@ -4,7 +4,7 @@ import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
-from src.config import GUILD_ID  # bind slash command to your guild
+from src.config import GUILD_ID
 
 log = logging.getLogger("cog-tasks")
 
@@ -22,7 +22,6 @@ class Tasks(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # Start background tasks once when the bot is ready
         if not self._status_task:
             self._status_task = asyncio.create_task(self.cycle_status())
         if not self._heartbeat_task:
@@ -46,26 +45,29 @@ class Tasks(commands.Cog):
             await asyncio.sleep(60)
 
     @app_commands.command(name="status", description="Manually set the bot's status")
-    @app_commands.describe(type="Type of activity", text="Status text")
-    @app_commands.guilds(GUILD_ID)  # bind this command to your guild to avoid global registration timing issues
-    async def status(self, interaction: discord.Interaction, type: str, text: str):
-        """Slash command to manually set a custom status."""
+    @app_commands.describe(
+        type="Choose the type of activity",
+        text="The text to display in the status"
+    )
+    @app_commands.choices(type=[
+        app_commands.Choice(name="Playing", value="playing"),
+        app_commands.Choice(name="Watching", value="watching"),
+        app_commands.Choice(name="Listening", value="listening"),
+        app_commands.Choice(name="Competing", value="competing"),
+    ])
+    @app_commands.guilds(GUILD_ID)
+    async def status(self, interaction: discord.Interaction, type: app_commands.Choice[str], text: str):
+        """Slash command to manually set a custom status with predefined options."""
         mapping = {
             "playing": discord.ActivityType.playing,
             "watching": discord.ActivityType.watching,
             "listening": discord.ActivityType.listening,
             "competing": discord.ActivityType.competing,
         }
-        activity_type = mapping.get(type.lower())
-        if not activity_type:
-            return await interaction.response.send_message(
-                "Invalid type. Use: playing, watching, listening, competing.", ephemeral=True
-            )
-
+        activity_type = mapping[type.value]
         activity = discord.Activity(type=activity_type, name=text)
         await self.bot.change_presence(activity=activity, status=discord.Status.online)
-        await interaction.response.send_message(f"✅ Status set to {type} {text}", ephemeral=True)
+        await interaction.response.send_message(f"✅ Status set to {type.name} {text}", ephemeral=True)
 
 async def setup(bot: commands.Bot):
-    # Just add the cog; command registration will be handled by the bot's tree sync
     await bot.add_cog(Tasks(bot))
